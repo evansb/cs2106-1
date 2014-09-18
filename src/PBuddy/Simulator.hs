@@ -7,6 +7,7 @@ import Control.Monad.Trans.Writer
 import PBuddy.Types
 import PBuddy.Manager
 import PBuddy.Parser
+import Data.List (intercalate)
 import qualified Data.List.Split as S
 
 render :: PID -> String
@@ -17,7 +18,7 @@ render x
     | otherwise       = [x]
 
 formatOutput :: String -> String
-formatOutput = unlines
+formatOutput = intercalate "\n\n"
              . map (unwords . map render)
              . S.split (S.keepDelimsL $ S.oneOf [resetPID])
 
@@ -31,7 +32,7 @@ runSimulator content = do
         let commandList = case parse commands "" content of
                             Left pe -> error $ show pe
                             Right res -> res
-        putStr (fst (execCommands (return initPID : commandList)))
+        putStrLn (fst (execCommands (return initPID : commandList)))
 
 runSimulatorVerbose :: String -> IO ()
 runSimulatorVerbose content = do

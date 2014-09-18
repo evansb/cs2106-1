@@ -43,7 +43,9 @@ createProc cpid prio = do
         tell ("Creating Process " ++ show (cpid,prio) ++ "\n")
         ppid <- running <$> get
         tryGet <- getPCB cpid
-        if tryGet /= nilProcess then
+        let pidExists = tryGet /= nilProcess
+        let invalidPID = prio == Init
+        if invalidPID || pidExists then
             return errorPID
         else do
             let childPCB = createPCB cpid ppid prio
@@ -58,7 +60,9 @@ killProc :: PID -> REPL PID
 killProc pid0 = do
         tell ("Killing Process " ++ [pid0] ++ "\n")
         os <- get
-        canKill <- running os `isAncestorOf` pid0
+        let notInit = pid0 /= initPID
+        isAncestor <- running os `isAncestorOf` pid0
+        let canKill = notInit && isAncestor
         if canKill then
             killProcInner pid0
         else return errorPID

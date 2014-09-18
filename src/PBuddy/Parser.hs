@@ -16,7 +16,7 @@ getPrioChar p = case p of
                     '0' -> Init
                     '1' -> User
                     '2' -> System
-                    _   -> error "Invalid priority"
+                    _   -> Init
 
 resetCmd :: Parser (REPL PID)
 resetCmd = string "init" >> return reset

@@ -1,3 +1,5 @@
+cr x 3
+cr x 0
 cr x 2
 cr x 2
 cr y 1
@@ -11,6 +13,9 @@ de z
 rel R1 1
 de s
 de x
+cr x 1
+cr x 2
+to
 
 init
 cr x 1
