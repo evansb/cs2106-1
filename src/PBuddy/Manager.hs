@@ -95,8 +95,9 @@ requestResource rid0 unit0 = do
         let rcb0 = allResources os V.! rid0
         let enoughUnit = unit rcb0 >= unit0
         let invalidUnit = unit0 < 0 || unit0 > rid0
-        if invalidUnit
-        then return errorPID
+        let runningIsInit = running os == initPID
+        if invalidUnit || runningIsInit then
+            return errorPID
         else do
             if not enoughUnit
             then do
