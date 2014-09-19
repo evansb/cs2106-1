@@ -58,3 +58,42 @@ to
 req R2 2
 req R1 1
 cr x 2
+
+init
+cr p 1
+req R1 1
+cr q 1
+to
+rel R1 1
+rel R2 2
+req R2 2
+rel R2 3
+
+init
+cr x 2
+cr y 2
+to
+de x
+
+init
+cr x 1
+req R1 1
+cr y 2
+req R1 1
+de y
+rel R1 1
+cr z 1
+to
+req R1 1
+
+init
+cr x 1
+req R1 1
+cr y 2
+req R1 1
+de y
+rel R1 1
+cr z 1
+req R1 1
+to
+req R2 4

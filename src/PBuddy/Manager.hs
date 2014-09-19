@@ -82,6 +82,7 @@ killProcInner pid0 = do
         traverse killProcInner (children pcbToDelete)
         unregisterPCB pcbToDelete
         removeFromRL pid0
+        mapM_ (removeFromWaitingList pid0) [1..4]
         tell ("[Success] Killed : " ++ [pid0] ++ "\n")
         scheduler
 
@@ -126,18 +127,16 @@ requestResource rid0 unit0 = do
 -- | The inner relesase resource function.
 --   Assume all conditions are satisfied beforehand
 releaseR :: PID -> RID -> Int -> REPL ()
-releaseR pid0 rid0 unit0 = do
+releaseR pid0 rid0 unit0 = unless (unit0 <= 0) $ do
         pcb0 <- getPCB pid0
         let unit1 = resources pcb0 V.! rid0
-        let invalidUnit = unit0 <= 0 || unit0 > unit1
-        unless invalidUnit $ do
-            let decr x = x - unit1
-            let resources' = alterVector decr rid0 (resources pcb0)
-            updatePCB (\p -> p { resources = resources' }) pid0
-            decrResource rid0 (- unit0)
-            feedDepraved rid0
-            tell ("[Res] Released " ++ show unit0  ++ " of "
-                    ++ show rid0 ++ "\n")
+        let decr x = x - unit1
+        let resources' = alterVector decr rid0 (resources pcb0)
+        updatePCB (\p -> p { resources = resources' }) pid0
+        decrResource rid0 (- unit0)
+        feedDepraved rid0
+        tell ("[Res] Released " ++ show unit0  ++ " of "
+                ++ show rid0 ++ "\n")
 
 -- | Release all resources.
 releaseAll :: PID -> REPL ()
@@ -150,8 +149,15 @@ releaseResource :: RID -> Int -> REPL PID
 releaseResource rid0 unit0 = do
         tell ("Releasing " ++ show unit0 ++ " of " ++ show rid0 ++ "\n")
         current <- running <$> get
-        releaseR current rid0 unit0
-        scheduler
+        pcb0 <- getPCB current
+        let unit1 = resources pcb0 V.! rid0
+        -- Cannot release more than it holds.
+        let invalidUnit = unit0 <= 0 || unit0 > unit1
+        if invalidUnit then
+            return errorPID
+        else do
+            releaseR current rid0 unit0
+            scheduler
 
 -- | Place the running process to the back of the queue
 --   Get new highest priority process
@@ -244,6 +250,23 @@ addToWaitingList rid0 pid0 unit0 = do
         updateRCB (const newRCB) rid0
         removeFromRL pid0
         modify (\os -> os { running = '0' })
+
+-- Remove a process from the waiting list
+removeFromWaitingList :: PID -> RID -> REPL ()
+removeFromWaitingList pid0 rid0 = do
+        rcb0 <- getRCB rid0
+        unit0 <- ((V.! rid0) . resources) <$> getPCB pid0
+        let bloc = blocked rcb0
+        let newRCB = rcb0 {
+            blocked = removeSequence (pid0, unit0) bloc
+        }
+        updateRCB (const newRCB) rid0
+
+removeSequence :: (Eq a) => a -> S.Seq a -> S.Seq a
+removeSequence el =
+        foldr (\e y -> if e == el
+                       then  e S.<| y
+                       else y) S.empty
 
 -- Feed blocked status with resource
 feedDepraved :: RID -> REPL ()
