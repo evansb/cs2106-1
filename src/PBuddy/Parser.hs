@@ -1,4 +1,4 @@
-
+{-# LANGUAGE DoAndIfThenElse #-}
 module PBuddy.Parser where
 
 import Control.Applicative hiding (many, (<|>))
@@ -40,7 +40,10 @@ requestResourceCmd = do
         _ <- string "req" <* space
         rid0 <- ordify <$> (char 'R' *> digit <* space)
         unit0 <- ordify <$> digit
-        return $ requestResource rid0 unit0
+        return $ if (unit0 >= 0) && (unit0 <= 4) then
+            requestResource rid0 unit0
+        else
+            return errorPID
 
 -- | Parser for releaser resource command
 releaseResourceCmd :: Parser (REPL PID)
@@ -48,7 +51,10 @@ releaseResourceCmd = do
         _ <- string "rel" <* space
         rid0 <- ordify <$> (char 'R' *> digit <* space)
         unit0 <- ordify <$> digit
-        return $ releaseResource rid0 unit0
+        return $ if (unit0 >= 0) && (unit0 <= 4) then
+            releaseResource rid0 unit0
+        else
+            return errorPID
 
 eofl = (try (string "\r\n") <|> string "\n") >> return '\n'
 
@@ -61,6 +67,7 @@ commands = many (choice (map try
       , killProcCmd
       , requestResourceCmd
       , releaseResourceCmd
+      , return (return errorPID)
     ]) <* many1 eofl)
 
 -- Miscellaneous functions.
