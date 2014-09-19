@@ -13,3 +13,5 @@ init x x y error
 init x x y x x x x z z
 
 init x x y x x x x x z error
+
+init x y y y error

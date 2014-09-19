@@ -64,11 +64,13 @@ killProc :: PID -> REPL PID
 killProc pid0 = do
         tell ("Killing Process " ++ [pid0] ++ "\n")
         os <- get
+        -- Cannot kill non existent
+        exist <- (/= nilProcess) <$> getPCB pid0
         -- Cannot kill init process.
         let notInit = pid0 /= initPID
         -- Can only kill descendants.
         isAncestor <- running os `isAncestorOf` pid0
-        let canKill = notInit && isAncestor
+        let canKill = exist && notInit && isAncestor
         if canKill then
             killProcInner pid0
         else return errorPID

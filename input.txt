@@ -97,3 +97,10 @@ cr z 1
 req R1 1
 to
 req R2 4
+
+init
+cr x 1
+cr y 2
+cr z 2
+de z
+de z
