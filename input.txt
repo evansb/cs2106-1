@@ -40,3 +40,21 @@ to
 req R1 2
 
 init
+cr p 1
+req R2 1
+cr q 1
+to
+req R2 2
+req R2 1
+cr x 2
+
+init
+cr p 1
+req R1 1
+cr q 1
+to
+req R2 2
+to
+req R2 2
+req R1 1
+cr x 2

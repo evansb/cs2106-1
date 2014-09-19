@@ -19,31 +19,35 @@ import PBuddy.Resource
 
 -- Definition of initial OS State
 initialOS :: OS
-initialOS = OS {
-              procTable    = initProcTable,
-              allResources = initRCBs,
-              running      = pid initProcess,
-              ready        = S.singleton (pid initProcess)
-            }
+initialOS =
+        OS {
+             procTable    = initProcTable
+           , allResources = initRCBs
+           , running      = pid initProcess
+           , ready        = S.singleton (pid initProcess)
+           }
 
 initPID = '&'
 errorPID = '-'
 resetPID = '!'
 
--- Reset the OS to initial state
+-- | Reset the OS to initial state, return reset PID
 reset:: REPL PID
 reset = do
         put initialOS
         tell "[SYS] System initialized\n"
         return resetPID
 
--- Create a process
+-- | Create a process by specifying a PID and a Priority.
+--   Call scheduler in the end.
 createProc :: PID -> Priority -> REPL PID
 createProc cpid prio = do
         tell ("Creating Process " ++ show (cpid,prio) ++ "\n")
         ppid <- running <$> get
         tryGet <- getPCB cpid
+        --  Cannot create if PID already exists
         let pidExists = tryGet /= nilProcess
+        --  Cannot create process with init priority
         let invalidPID = prio == Init
         if invalidPID || pidExists then
             return errorPID
@@ -54,33 +58,35 @@ createProc cpid prio = do
             registerPCB childPCB
             scheduler
 
--- Kill a process, free hold resources.
--- Check if a process can be killed first.
+-- | Kill a process and free hold resources.
+--   Call scheduler in the end.
 killProc :: PID -> REPL PID
 killProc pid0 = do
         tell ("Killing Process " ++ [pid0] ++ "\n")
         os <- get
+        -- Cannot kill init process.
         let notInit = pid0 /= initPID
+        -- Can only kill descendants.
         isAncestor <- running os `isAncestorOf` pid0
         let canKill = notInit && isAncestor
         if canKill then
             killProcInner pid0
         else return errorPID
 
--- Kill a process, assuming the process id is valid and can be killed
--- by current running process.
+-- | Kill a process, assuming the process id is valid and can be killed
+--   by current running process.
 killProcInner :: PID -> REPL PID
 killProcInner pid0 = do
         pcbToDelete <- getPCB pid0
         releaseAll pid0
-        traverse killProc (children pcbToDelete)
+        traverse killProcInner (children pcbToDelete)
         unregisterPCB pcbToDelete
         removeFromRL pid0
         tell ("[Success] Killed : " ++ [pid0] ++ "\n")
         scheduler
 
--- Request a timeout. Place back process to ready list and inquire new
--- highest priority process.
+-- | Request a timeout. Place back process to ready list and inquire new
+--   highest priority process.
 timeout :: REPL PID
 timeout = do
         tell "Timeout\n"
@@ -92,13 +98,17 @@ timeout = do
         setStatus Running highest
         scheduler
 
+-- | Request some units of resources.
 requestResource :: RID -> Int -> REPL PID
 requestResource rid0 unit0 = do
         tell ("Requesting " ++ show unit0 ++ " of " ++ show rid0 ++ "\n")
         os <- get
         let rcb0 = allResources os V.! rid0
+        -- # of units must suffice
         let enoughUnit = unit rcb0 >= unit0
+        -- # of units must be valid
         let invalidUnit = unit0 < 0 || unit0 > rid0
+        -- Process must not be init
         let runningIsInit = running os == initPID
         if invalidUnit || runningIsInit then
             return errorPID
@@ -113,11 +123,13 @@ requestResource rid0 unit0 = do
                 tell ("[Res] Resource assigned " ++ [running os] ++ "\n")
             scheduler
 
+-- | The inner relesase resource function.
+--   Assume all conditions are satisfied beforehand
 releaseR :: PID -> RID -> Int -> REPL ()
 releaseR pid0 rid0 unit0 = do
         pcb0 <- getPCB pid0
         let unit1 = resources pcb0 V.! rid0
-        let invalidUnit = unit0 <= 0 || unit0 /= unit1
+        let invalidUnit = unit0 <= 0 || unit0 > unit1
         unless invalidUnit $ do
             let decr x = x - unit1
             let resources' = alterVector decr rid0 (resources pcb0)
@@ -127,11 +139,13 @@ releaseR pid0 rid0 unit0 = do
             tell ("[Res] Released " ++ show unit0  ++ " of "
                     ++ show rid0 ++ "\n")
 
+-- | Release all resources.
 releaseAll :: PID -> REPL ()
 releaseAll pid0 = do
         resources0 <- resources <$> getPCB pid0
         mapM_ (\x -> releaseR pid0 x (resources0 V.! x)) [1..4]
 
+-- | Release some units of resources
 releaseResource :: RID -> Int -> REPL PID
 releaseResource rid0 unit0 = do
         tell ("Releasing " ++ show unit0 ++ " of " ++ show rid0 ++ "\n")
@@ -139,6 +153,8 @@ releaseResource rid0 unit0 = do
         releaseR current rid0 unit0
         scheduler
 
+-- | Place the running process to the back of the queue
+--   Get new highest priority process
 scheduler :: REPL PID
 scheduler = do
         os <- get
