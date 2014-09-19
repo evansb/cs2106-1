@@ -121,3 +121,22 @@ to
 de a
 req R2 2
 de b
+init
+cr x 1
+req R1 1
+cr y 2
+req R1 1
+req R2 2
+rel R1 1
+de x
+
+init
+cr x 1
+req R3 2
+cr y 2
+req R3 3
+req R3 1
+req R4 2
+rel R3 2
+rel R3 1
+de x
