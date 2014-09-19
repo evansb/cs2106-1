@@ -104,3 +104,20 @@ cr y 2
 cr z 2
 de z
 de z
+
+init
+cr x 1
+cr y 1
+cr z 2
+cr a 2
+to
+cr b 2
+to
+req R1 1
+to
+req R2 2
+to
+to
+de a
+req R2 2
+de b
