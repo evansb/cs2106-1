@@ -280,7 +280,7 @@ removeSequence el =
 feedDepraved :: RID -> REPL ()
 feedDepraved rid0 = do
         rcb0 <- getRCB rid0
-        let waitingList  = blocked rcb0
+        let waitingList = blocked rcb0
         let unit0 = unit rcb0
         case S.viewl waitingList of
             S.EmptyL -> return ()
@@ -289,7 +289,7 @@ feedDepraved rid0 = do
                     setStatus Ready pid0
                     addToRL pid0
                     revec <- resources <$> getPCB pid0
-                    let resources' = alterVector (+ (unit0 - unit1)) rid0 revec
+                    let resources' = alterVector (+ unit0) rid0 revec
                     updatePCB (\p -> p { resources = resources' }) pid0
                     updateRCB (\r -> r { blocked = xs }) rid0
                     feedDepraved rid0

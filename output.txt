@@ -1,4 +1,4 @@
-init error error x error x x x z z x z x error error init x error x
+init error error x error x x x z z x z x x error init x error x
 
 init x x x x p p q q r r x p q r x x x p x error
 
