@@ -78,10 +78,15 @@ killProc pid0 = do
 killProcInner :: PID -> REPL PID
 killProcInner pid0 = do
         pcbToDelete <- getPCB pid0
+        -- Release all resources.
         releaseAll pid0
+        -- Kill the whole descendants
         traverse killProcInner (children pcbToDelete)
+        -- Unregister it
         unregisterPCB pcbToDelete
+        -- Remove from ready lsit if it is there
         removeFromRL pid0
+        -- Remove from blocked list if it is there.
         mapM_ (removeFromWaitingList pid0) [1..4]
         tell ("[Success] Killed : " ++ [pid0] ++ "\n")
         scheduler
@@ -129,10 +134,11 @@ requestResource rid0 unit0 = do
 releaseR :: PID -> RID -> Int -> REPL ()
 releaseR pid0 rid0 unit0 = unless (unit0 <= 0) $ do
         pcb0 <- getPCB pid0
-        let unit1 = resources pcb0 V.! rid0
-        let decr x = x - unit1
+        let decr x = x - unit0
+        -- Decrement from vector and update
         let resources' = alterVector decr rid0 (resources pcb0)
         updatePCB (\p -> p { resources = resources' }) pid0
+        -- Add the resource back
         decrResource rid0 (- unit0)
         feedDepraved rid0
         tell ("[Res] Released " ++ show unit0  ++ " of "
@@ -280,5 +286,8 @@ feedDepraved rid0 = do
                 when (unit0 >= unit1) $ do
                     setStatus Ready pid0
                     addToRL pid0
+                    revec <- resources <$> getPCB pid0
+                    let resources' = alterVector (+ (unit0 - unit1)) rid0 revec
+                    updatePCB (\p -> p { resources = resources' }) pid0
                     updateRCB (\r -> r { blocked = xs }) rid0
                     feedDepraved rid0
