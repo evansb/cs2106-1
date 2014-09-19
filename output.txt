@@ -21,3 +21,13 @@ init x x z z a a z z b b a z z z error
 init x x y x x y error
 
 init x x y x x x x y error
+
+init x x y y x x z y y a x z error
+
+init x x y y x x z y y a x z y z error
+
+init x x x y z x y z
+
+init
+
+init
