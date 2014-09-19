@@ -111,6 +111,7 @@ requestResource :: RID -> Int -> REPL PID
 requestResource rid0 unit0 = do
         tell ("Requesting " ++ show unit0 ++ " of " ++ show rid0 ++ "\n")
         os <- get
+        holding <- ((V.! rid0) . resources) <$> getRunningPCB
         let rcb0 = allResources os V.! rid0
         -- # of units must suffice
         let enoughUnit = unit rcb0 >= unit0
@@ -118,7 +119,9 @@ requestResource rid0 unit0 = do
         let invalidUnit = unit0 < 0 || unit0 > rid0
         -- Process must not be init
         let runningIsInit = running os == initPID
-        if invalidUnit || runningIsInit then
+        -- Must not exceed limit
+        let exceedLimit = (unit0 + holding) > rid0
+        if exceedLimit || invalidUnit || runningIsInit then
             return errorPID
         else do
             if not enoughUnit

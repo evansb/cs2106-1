@@ -31,7 +31,7 @@ timeoutCmd = string "to" >> return timeout
 killProcCmd :: Parser (REPL PID)
 killProcCmd = do
         _ <- string "de" <* space
-        pid0 <- alphaNum
+        pid0 <- (try (string "init") >> return initPID) <|> alphaNum
         return $ killProc pid0
 
 -- | Parser for request resource command
@@ -50,6 +50,8 @@ releaseResourceCmd = do
         unit0 <- ordify <$> digit
         return $ releaseResource rid0 unit0
 
+eofl = (try (string "\r\n") <|> string "\n") >> return '\n'
+
 -- | Combinations of all commands
 commands :: Parser [REPL PID]
 commands = many (choice (map try
@@ -59,7 +61,7 @@ commands = many (choice (map try
       , killProcCmd
       , requestResourceCmd
       , releaseResourceCmd
-    ]) <* many1 eol)
+    ]) <* many1 eofl)
 
 -- Miscellaneous functions.
 eol :: Parser Char

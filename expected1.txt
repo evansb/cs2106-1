@@ -1,0 +1,33 @@
+init x x x x z z x z x x init
+
+init x x x x p p q q r r x p q r x x x p x error
+
+init x error
+
+init error
+
+init error
+
+init x x y x
+
+init error
+
+init error
+
+init x x y error
+
+init x x x x x error
+
+init x x error
+
+init x x error
+
+init error
+
+init error
+
+init x x z z a a z z b b a z z z error
+
+init x x y y x z z b error
+
+init x x y y x z z y x x
